@@ -27,9 +27,10 @@ passport.use(new GoogleStrategy({
   
   let user = users.find(u => u.googleId === googleUser.sub);
   if (!user) {
+    const newUserId = uuidv4();
     user = {
-      id: uuidv4(),
-      userId: uuidv4(), // Generate a separate userId for JWT
+      id: newUserId,
+      userId: newUserId, // Use the same ID for both fields
       googleId: googleUser.sub,
       email: googleUser.email,
       name: googleUser.name,
