@@ -16,29 +16,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchUserInfo = async (token: string) => {
+    try {
+      const response = await fetch('http://localhost:3001/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user info');
+      }
+      
+      const userData = await response.json();
+      setUser(userData);
+    } catch (err) {
+      console.error('Error fetching user info:', err);
+      setError('Failed to fetch user information');
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     if (storedToken) {
-      try {
-        const base64Url = storedToken.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        );
-        const { userId } = JSON.parse(jsonPayload);
-        setUser({
-          id: userId,
-          userId,
-          email: '',
-          name: 'User',
-        });
-        setToken(storedToken);
-      } catch (err) {
-        localStorage.removeItem('token');
-      }
+      login(storedToken);
     }
   }, []);
 
@@ -58,25 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = (newToken: string) => {
+  const login = async (newToken: string) => {
     try {
       setToken(newToken);
       localStorage.setItem('token', newToken);
-      const base64Url = newToken.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const { userId } = JSON.parse(jsonPayload);
-      setUser({
-        id: userId,
-        userId,
-        email: '',
-        name: 'User',
-      });
+      await fetchUserInfo(newToken);
       setError(null);
     } catch (err) {
       setError('Failed to process login token');

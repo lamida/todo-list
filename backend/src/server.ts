@@ -127,6 +127,19 @@ app.get('/auth/google/callback',
   }
 );
 
+// Get user information
+app.get('/auth/me', authenticateJWT, (req: Request, res: Response): void => {
+  const { userId } = (req as any).user as JwtPayload;
+  const user = users.find(u => u.userId === userId);
+  
+  if (!user) {
+    res.status(404).json({ message: 'User not found' });
+    return;
+  }
+
+  res.json(user);
+});
+
 // GET all todos for the authenticated user
 app.get('/api/todos', authenticateJWT, (req: Request, res: Response): void => {
   const user = (req as any).user as JwtPayload;
