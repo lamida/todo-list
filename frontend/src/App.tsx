@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavig
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { loginWithGoogle } from './services/api';
 import './App.css';
-import Todo from './components/Todo';
 
 interface TodoItem {
   id: string;
@@ -12,51 +11,27 @@ interface TodoItem {
   createdAt: Date;
 }
 
-// Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, token } = useAuth();
   const location = useLocation();
   
-  console.log('ProtectedRoute - Auth state:', { 
-    user, 
-    token, 
-    path: location.pathname,
-    hasUser: !!user,
-    hasToken: !!token,
-    search: location.search
-  });
-  
   if (!user || !token) {
-    console.log('No user or token found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
 };
 
-// Login component
 const Login: React.FC = () => {
   const { error, user, token } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
-  
-  console.log('Login component - Auth state:', { 
-    error, 
-    user, 
-    token,
-    path: location.pathname,
-    search: location.search
-  });
 
   const handleLogin = () => {
-    console.log('Initiating Google login...');
     loginWithGoogle();
   };
 
-  // If we're already logged in, redirect to home
   useEffect(() => {
     if (user && token) {
-      console.log('User already logged in, redirecting to home');
       navigate('/', { replace: true });
     }
   }, [user, token, navigate]);
@@ -78,7 +53,6 @@ const Login: React.FC = () => {
   );
 };
 
-// TodoList component
 const TodoList: React.FC = () => {
   const { user, logout } = useAuth();
   const [todos, setTodos] = useState<TodoItem[]>([]);
@@ -102,7 +76,6 @@ const TodoList: React.FC = () => {
       }
       
       const data = await response.json();
-      console.log('Fetched todos:', data);
       setTodos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching todos:', err);
@@ -235,7 +208,6 @@ const TodoList: React.FC = () => {
   );
 };
 
-// App component
 const App: React.FC = () => {
   return (
     <AuthProvider>
