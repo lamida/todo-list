@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -36,12 +36,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const login = useCallback(async (newToken: string) => {
+    try {
+      setToken(newToken);
+      localStorage.setItem('token', newToken);
+      await fetchUserInfo(newToken);
+      setError(null);
+    } catch (err) {
+      setError('Failed to process login token');
+    }
+  }, []);
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     if (storedToken) {
       login(storedToken);
     }
-  }, []);
+  }, [login]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -57,18 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login(tokenFromUrl);
       window.history.replaceState({}, document.title, '/');
     }
-  }, []);
-
-  const login = async (newToken: string) => {
-    try {
-      setToken(newToken);
-      localStorage.setItem('token', newToken);
-      await fetchUserInfo(newToken);
-      setError(null);
-    } catch (err) {
-      setError('Failed to process login token');
-    }
-  };
+  }, [login]);
 
   const logout = () => {
     setUser(null);
