@@ -38,5 +38,5 @@ export interface JwtPayload {
 }
 
 export interface AuthenticatedRequest extends Request {
-  user?: JwtPayload;
+  user?: User;
 } 
