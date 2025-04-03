@@ -1,46 +1,105 @@
-# Getting Started with Create React App
+# Todo List Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A full-stack Todo List application built with React, TypeScript, and Express.js.
 
-## Available Scripts
+## Project Structure
 
-In the project directory, you can run:
+```
+/
+├── frontend/          # React frontend application
+└── backend/          # Express.js backend server
+```
 
-### `npm start`
+## Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- Node.js (v14 or higher)
+- npm (v6 or higher)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Setup Instructions
 
-### `npm test`
+### Backend Setup
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-### `npm run build`
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The backend server will run on http://localhost:3001
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Frontend Setup
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-### `npm run eject`
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+3. Start the development server:
+   ```bash
+   npm start
+   ```
+   The frontend application will run on http://localhost:3000
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Running the Application
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+1. Open two terminal windows
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+2. In the first terminal, start the backend:
+   ```bash
+   cd backend
+   npm run dev
+   ```
 
-## Learn More
+3. In the second terminal, start the frontend:
+   ```bash
+   cd frontend
+   npm start
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+4. Open your browser and navigate to http://localhost:3000
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## API Endpoints
+
+The backend provides the following REST API endpoints:
+
+- `GET /api/todos` - Get all todos
+- `POST /api/todos` - Create a new todo
+- `PUT /api/todos/:id` - Update a todo
+- `DELETE /api/todos/:id` - Delete a todo
+
+## Development
+
+- Backend uses Express.js with TypeScript
+- Frontend uses Create React App with TypeScript
+- The application uses an in-memory database for simplicity
+- CORS is configured to allow communication between frontend and backend
+
+## Troubleshooting
+
+If you encounter any issues:
+
+1. Make sure both servers are running
+2. Check the console for error messages
+3. Verify that you're in the correct directory when running commands
+4. Ensure all dependencies are installed correctly
+
+## Features
+
+- Add new todos
+- Mark todos as complete/incomplete
+- Delete todos
+- Real-time updates
+- Type-safe development with TypeScript 
