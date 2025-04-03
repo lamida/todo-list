@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { loginWithGoogle } from './services/api';
 import './App.css';
 import Todo from './components/Todo';
 
@@ -9,9 +12,78 @@ interface TodoItem {
   createdAt: Date;
 }
 
-function App() {
+// Protected Route component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, token } = useAuth();
+  const location = useLocation();
+  
+  console.log('ProtectedRoute - Auth state:', { 
+    user, 
+    token, 
+    path: location.pathname,
+    hasUser: !!user,
+    hasToken: !!token,
+    search: location.search
+  });
+  
+  if (!user || !token) {
+    console.log('No user or token found, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Login component
+const Login: React.FC = () => {
+  const { error, user, token } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  console.log('Login component - Auth state:', { 
+    error, 
+    user, 
+    token,
+    path: location.pathname,
+    search: location.search
+  });
+
+  const handleLogin = () => {
+    console.log('Initiating Google login...');
+    loginWithGoogle();
+  };
+
+  // If we're already logged in, redirect to home
+  useEffect(() => {
+    if (user && token) {
+      console.log('User already logged in, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [user, token, navigate]);
+
+  return (
+    <div className="login-container">
+      <h1>Todo List</h1>
+      {error && (
+        <div className="error-message">
+          {error === 'no_user' && 'No user information received from Google'}
+          {error === 'token_error' && 'Error generating authentication token'}
+          {error === 'Failed to process login token' && 'Error processing login token'}
+        </div>
+      )}
+      <button onClick={handleLogin} className="login-button">
+        Login with Google
+      </button>
+    </div>
+  );
+};
+
+// TodoList component
+const TodoList: React.FC = () => {
+  const { user, logout } = useAuth();
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTodo, setNewTodo] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTodos();
@@ -19,128 +91,169 @@ function App() {
 
   const fetchTodos = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/todos');
+      const response = await fetch('http://localhost:3001/api/todos', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch todos');
+      }
+      
       const data = await response.json();
-      setTodos(data);
-    } catch (error) {
-      console.error('Error fetching todos:', error);
+      console.log('Fetched todos:', data);
+      setTodos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching todos:', err);
+      setError('Failed to load todos');
+      setTodos([]);
     }
   };
 
-  const addTodo = async (e: React.FormEvent) => {
+  const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
 
     try {
-      console.log('Attempting to add todo:', newTodo);
       const response = await fetch('http://localhost:3001/api/todos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ text: newTodo }),
       });
-      
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Failed to add todo');
       }
-      
+
       const data = await response.json();
-      console.log('Successfully added todo:', data);
-      setTodos([...todos, data]);
+      setTodos(prevTodos => [...prevTodos, data]);
       setNewTodo('');
-    } catch (error) {
-      console.error('Error adding todo:', error);
-      alert('Failed to add todo. Please check the console for details.');
+    } catch (err) {
+      console.error('Error adding todo:', err);
+      setError('Failed to add todo');
     }
   };
 
-  const toggleTodo = async (id: string) => {
-    const todo = todos.find(t => t.id === id);
-    if (!todo) return;
-
-    try {
-      await fetch(`http://localhost:3001/api/todos/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ completed: !todo.completed }),
-      });
-      setTodos(todos.map(t => 
-        t.id === id ? { ...t, completed: !t.completed } : t
-      ));
-    } catch (error) {
-      console.error('Error toggling todo:', error);
-    }
-  };
-
-  const deleteTodo = async (id: string) => {
-    try {
-      await fetch(`http://localhost:3001/api/todos/${id}`, {
-        method: 'DELETE',
-      });
-      setTodos(todos.filter(t => t.id !== id));
-    } catch (error) {
-      console.error('Error deleting todo:', error);
-    }
-  };
-
-  const editTodo = async (id: string, newText: string) => {
+  const handleToggleTodo = async (id: string) => {
     try {
       const response = await fetch(`http://localhost:3001/api/todos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ text: newText }),
+        body: JSON.stringify({ completed: true }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Failed to update todo');
       }
 
       const updatedTodo = await response.json();
-      setTodos(todos.map(todo => 
-        todo.id === id ? updatedTodo : todo
-      ));
-    } catch (error) {
-      console.error('Error editing todo:', error);
-      alert('Failed to edit todo. Please check the console for details.');
+      setTodos(prevTodos =>
+        prevTodos.map(todo => (todo.id === id ? updatedTodo : todo))
+      );
+    } catch (err) {
+      console.error('Error updating todo:', err);
+      setError('Failed to update todo');
+    }
+  };
+
+  const handleDeleteTodo = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/todos/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete todo');
+      }
+
+      setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
+    } catch (err) {
+      console.error('Error deleting todo:', err);
+      setError('Failed to delete todo');
     }
   };
 
   return (
-    <div className="App" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      <h1>Todo List</h1>
-      <form onSubmit={addTodo} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+    <div className="todo-container">
+      <div className="header">
+        <h1>Todo List</h1>
+        <div className="user-info">
+          <span>Welcome, {user?.name}</span>
+          <button onClick={logout} className="logout-button">
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      <form onSubmit={handleAddTodo} className="todo-form">
         <input
           type="text"
           value={newTodo}
           onChange={(e) => setNewTodo(e.target.value)}
-          placeholder="Add a new todo"
-          style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          placeholder="Add a new todo..."
+          className="todo-input"
         />
-        <button 
-          type="submit"
-          style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
-        >
+        <button type="submit" className="add-button">
           Add
         </button>
       </form>
-      <div>
-        {todos.map(todo => (
-          <Todo
-            key={todo.id}
-            {...todo}
-            onToggle={toggleTodo}
-            onDelete={deleteTodo}
-            onEdit={editTodo}
-          />
+
+      <ul className="todo-list">
+        {todos.map((todo) => (
+          <li key={todo.id} className="todo-item">
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => handleToggleTodo(todo.id)}
+              className="todo-checkbox"
+            />
+            <span className={todo.completed ? 'completed' : ''}>
+              {todo.text}
+            </span>
+            <button
+              onClick={() => handleDeleteTodo(todo.id)}
+              className="delete-button"
+            >
+              Delete
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
-}
+};
+
+// App component
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <TodoList />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+};
 
 export default App;
