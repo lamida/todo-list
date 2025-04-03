@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { loginWithGoogle } from './services/api';
+import Todo from './components/Todo';
 import './App.css';
 
 interface TodoItem {
@@ -13,7 +14,6 @@ interface TodoItem {
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, token } = useAuth();
-  const location = useLocation();
   
   if (!user || !token) {
     return <Navigate to="/login" replace />;
@@ -102,8 +102,8 @@ const TodoList: React.FC = () => {
         throw new Error('Failed to add todo');
       }
 
-      const data = await response.json();
-      setTodos(prevTodos => [...prevTodos, data]);
+      const newTodoItem = await response.json();
+      setTodos([...todos, newTodoItem]);
       setNewTodo('');
     } catch (err) {
       console.error('Error adding todo:', err);
@@ -113,13 +113,16 @@ const TodoList: React.FC = () => {
 
   const handleToggleTodo = async (id: string) => {
     try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
       const response = await fetch(`http://localhost:3001/api/todos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ completed: true }),
+        body: JSON.stringify({ completed: !todo.completed }),
       });
 
       if (!response.ok) {
@@ -127,9 +130,7 @@ const TodoList: React.FC = () => {
       }
 
       const updatedTodo = await response.json();
-      setTodos(prevTodos =>
-        prevTodos.map(todo => (todo.id === id ? updatedTodo : todo))
-      );
+      setTodos(todos.map(t => t.id === id ? updatedTodo : t));
     } catch (err) {
       console.error('Error updating todo:', err);
       setError('Failed to update todo');
@@ -149,10 +150,33 @@ const TodoList: React.FC = () => {
         throw new Error('Failed to delete todo');
       }
 
-      setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
+      setTodos(todos.filter(todo => todo.id !== id));
     } catch (err) {
       console.error('Error deleting todo:', err);
       setError('Failed to delete todo');
+    }
+  };
+
+  const handleEditTodo = async (id: string, newText: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/todos/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ text: newText }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update todo');
+      }
+
+      const updatedTodo = await response.json();
+      setTodos(todos.map(t => t.id === id ? updatedTodo : t));
+    } catch (err) {
+      console.error('Error updating todo:', err);
+      setError('Failed to update todo');
     }
   };
 
@@ -183,27 +207,19 @@ const TodoList: React.FC = () => {
         </button>
       </form>
 
-      <ul className="todo-list">
+      <div className="todo-list">
         {todos.map((todo) => (
-          <li key={todo.id} className="todo-item">
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => handleToggleTodo(todo.id)}
-              className="todo-checkbox"
-            />
-            <span className={todo.completed ? 'completed' : ''}>
-              {todo.text}
-            </span>
-            <button
-              onClick={() => handleDeleteTodo(todo.id)}
-              className="delete-button"
-            >
-              Delete
-            </button>
-          </li>
+          <Todo
+            key={todo.id}
+            id={todo.id}
+            text={todo.text}
+            completed={todo.completed}
+            onToggle={handleToggleTodo}
+            onDelete={handleDeleteTodo}
+            onEdit={handleEditTodo}
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
 };

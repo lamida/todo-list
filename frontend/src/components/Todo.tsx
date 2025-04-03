@@ -14,10 +14,10 @@ const Todo: React.FC<TodoProps> = ({ id, text, completed, onToggle, onDelete, on
   const [editText, setEditText] = useState(text);
 
   const handleEdit = () => {
-    if (isEditing) {
+    if (isEditing && editText.trim() !== text) {
       onEdit(id, editText);
     }
-    setIsEditing(!isEditing);
+    setIsEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -26,6 +26,12 @@ const Todo: React.FC<TodoProps> = ({ id, text, completed, onToggle, onDelete, on
     } else if (e.key === 'Escape') {
       setIsEditing(false);
       setEditText(text);
+    }
+  };
+
+  const handleClick = () => {
+    if (!completed) {
+      setIsEditing(true);
     }
   };
 
@@ -47,16 +53,17 @@ const Todo: React.FC<TodoProps> = ({ id, text, completed, onToggle, onDelete, on
           style={{ flex: 1, padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
         />
       ) : (
-        <span style={{ textDecoration: completed ? 'line-through' : 'none', flex: 1 }}>
+        <span 
+          onClick={handleClick}
+          style={{ 
+            textDecoration: completed ? 'line-through' : 'none', 
+            flex: 1,
+            cursor: completed ? 'default' : 'pointer'
+          }}
+        >
           {text}
         </span>
       )}
-      <button 
-        onClick={handleEdit}
-        style={{ padding: '5px 10px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '4px' }}
-      >
-        {isEditing ? 'Save' : 'Edit'}
-      </button>
       <button 
         onClick={() => onDelete(id)}
         style={{ padding: '5px 10px', backgroundColor: '#ff4444', color: 'white', border: 'none', borderRadius: '4px' }}
